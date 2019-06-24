@@ -1,0 +1,389 @@
+﻿
+@{
+    Layout = null;
+}
+
+<!DOCTYPE html>
+
+<html>
+<head>
+    <meta name="viewport" content="width=device-width" />
+    <title>字典管理</title>
+    @Html.Partial("~/Views/Shared/_Head.cshtml")
+    <style>
+        #DivLeft {
+            width:300px;
+            height:100%;
+            float:left;
+        }
+        #DivRight {
+            width: calc(100% - 300px);
+            height: 100%;
+            float: left;
+        }
+        .ButtonBar {
+            height:60px;
+            box-sizing:border-box;
+            padding:5px;
+        }
+        #TreeBar {
+            height:calc(100% - 60px);
+        }
+        #GridBox {
+            height: calc(100% - 60px);
+        }
+    </style>
+</head>
+<body>
+    <div id="App" v-loading="Loading.bodyLoading">
+        <template>
+            <div id="DivLeft">
+                <div class="ButtonBar">
+                    <el-button type="primary" icon="icon iconfont icon-file-add" @@click="openAddGroupDialog">新增组</el-button>
+                    <el-button type="primary" icon="icon iconfont icon-edit" @@click="openEditGroupDialog" :disabled="InputStatus.editGroup">编辑组</el-button>
+                </div>
+                <div id="TreeBar"  v-loading="Loading.treeLoading">
+                    <el-tree :data="GroupData"
+                             :highlight-current="true"
+                             :props="DefaultProps"
+                             node-key="Id"
+                             @@node-click="MenuClick"
+                             ref="GroupTree"
+                             default-expand-all
+                             :expand-on-click-node="false">
+                        <span class="custom-tree-node" slot-scope="scope" >
+                            <template v-if="scope.data.ItemDesc==null">
+                                <i class="icon iconfont icon-folder"></i>
+                                <span>{{ scope.data.GroupDesc }}</span>
+                            </template>
+                            <template v-else>
+                                <i class="icon iconfont icon-file"></i>
+                                <span>{{ scope.data.ItemDesc }}</span>
+                            </template>
+                        </span>
+                    </el-tree>
+                </div>
+            </div>
+            <div id="DivRight">
+                <div class="ButtonBar">
+                    <el-button type="primary" icon="icon iconfont icon-file-add" @@click="openAddItemDialog" >新增项</el-button>
+                    <el-button type="primary" icon="icon iconfont icon-edit" @@click="openEditItemDialog" :disabled="InputStatus.editItem">编辑项</el-button>
+                    <el-button type="danger" icon="icon iconfont icon-delete" @@click="deleteItem" :disabled="InputStatus.deleteItem">删除项</el-button>
+                </div>
+                <div id="GridBox">
+                    <el-table ref="dataTable"
+                              :data="tableData"
+                              :border="true"
+                              @@selection-change="selectChange"
+                              @@row-click="rowClick"
+                              style="width: 100%;height:100%"
+                              element-loading-text="拼命加载中"
+                              element-loading-spinner="el-icon-loading"
+                              element-loading-background="rgba(200, 200,200, 0.5)"
+                              v-loading="Loading.tableLoading"
+                              >
+                        <el-table-column type="index"
+                                      
+                                         label=" ">
+                        </el-table-column>
+                        <el-table-column type="selection"
+                                         width="50">
+                        </el-table-column>
+                        <el-table-column prop="ItemDesc"
+                                         label="名称"
+                                         width="180">
+                        </el-table-column>
+                        <el-table-column prop="Sort"
+                                         label="排序"
+                                         width="50">
+                        </el-table-column>
+                        <el-table-column prop="IsEnabled"
+                                         label="是否启用"
+                                         width="150">
+                            <template slot-scope="scope">
+                                {{ scope.row.IsEnabled?"是":"否" }}
+                            </template>
+                        </el-table-column>
+                      
+
+                    </el-table>
+                </div>
+            </div>
+        </template>
+        <template>
+            <el-dialog :close-on-click-modal="false" :title="Dialog.addGroupDialogTitle"
+                       :visible.sync="Dialog.addGroupDialog"
+                       width="50%">
+                <el-form :model="AddGroupData" :rules="AddGroupRule" label-width="80px" ref="AddGroupForm" @@submit.native.prevent>
+                    <el-form-item label="组编码" prop="GroupCode">
+                        <el-input v-model="AddGroupData.GroupCode" :disabled="InputStatus.groupCode" placeholder="请输入组编码"></el-input>
+                    </el-form-item>
+                    <el-form-item label="组描述" prop="GroupDesc">
+                        <el-input v-model="AddGroupData.GroupDesc" placeholder="请输入组描述"></el-input>
+                    </el-form-item>
+                </el-form>
+                <span slot="footer" class="dialog-footer">
+                    <el-button type="primary" @@click="submitAddGroup">保 存</el-button>
+                    <el-button @@click="Dialog.addGroupDialog=false">取 消</el-button>
+                </span>
+            </el-dialog>
+
+            <el-dialog :close-on-click-modal="false" title="新增项"
+                       :visible.sync="Dialog.addItemDialog"
+                       width="50%">
+                <el-form :model="AddItemData" :rules="AddItemRule" label-width="120px" ref="AddItemForm" @@submit.native.prevent>
+                    <el-form-item label="所属组编码" prop="GroupCode">
+                        <el-input v-model="AddItemData.GroupCode" disabled></el-input>
+                    </el-form-item>
+                    <el-form-item label="所属组描述" prop="GroupDesc">
+                        <el-input v-model="AddItemData.GroupDesc" disabled></el-input>
+                    </el-form-item>
+                    <el-form-item label="项描述" prop="ItemDesc">
+                        <el-input v-model="AddItemData.ItemDesc" placeholder="请输入组描述"></el-input>
+                    </el-form-item>
+                    <el-form-item label="排序" prop="Sort">
+                        <el-input-number v-model="AddItemData.Sort"></el-input-number>
+                    </el-form-item>
+                    <el-form-item label="是否启用" prop="IsEnabled">
+                        <el-switch v-model="AddItemData.IsEnabled"
+                                   active-color="#13ce66"
+                                   inactive-color="#ff4949">
+                        </el-switch>
+                    </el-form-item>
+                </el-form>
+                <span slot="footer" class="dialog-footer">
+                    <el-button type="primary" @@click="submitAddItemDialog">保 存</el-button>
+                    <el-button @@click="Dialog.addItemDialog=false">取 消</el-button>
+                </span>
+            </el-dialog>
+        </template>
+    </div>
+</body>
+</html>
+<script>
+    $vue = new Vue({
+        el: "#App",
+        data: {
+            GroupData: [],
+            tableData: [],
+            DefaultProps: {
+                children: 'Items',
+                label: 'GroupDesc'
+            },
+            AddGroupData: {
+                Id: null,
+                GroupCode:"",
+                GroupDesc:""
+            },
+            AddGroupRule: {
+                GroupCode: [
+                    { required: true, message: '请输入组编码', trigger: 'change' },
+                    { max: 25, message: '长度不能超过25个字符', trigger: 'change' }
+                ],
+                GroupDesc: [
+                    { required: true, message: '请输入组描述', trigger: 'change' },
+                    { max: 25, message: '长度不能超过25个字符', trigger: 'change' }
+                ]
+            },
+            AddItemData: {
+                Id: null,
+                ItemDesc: "",
+                GroupCode: "",
+                GroupDesc:"",
+                Sort: 0,
+                IsEnabled: true  
+            },
+            AddItemRule: {
+                ItemDesc: [{ required: true, message: '请输入项描述', trigger: 'change' },
+                    { max: 25, message: '长度不能超过25个字符', trigger: 'change' }],
+            },
+            Dialog: {
+                addGroupDialog: false,
+                addGroupDialogTitle:"",
+                addItemDialog: false
+            },
+            InputStatus: {
+                groupCode: false,
+                editGroup: true,
+                editItem: true,
+                deleteItem: true
+            },
+            Loading: {
+                bodyLoading: false,
+                treeLoading: false,
+                tableLoading: false
+            },
+            selectGroup: null
+        },
+        methods: {
+            MenuClick: function (obj, node, tree) {
+                if (obj.ItemDesc == null) {
+                    axios.post("GetGroupItemList", { groupCode: obj.GroupCode }).then(function (res) {
+                        $vue.tableData = res.data;
+                    });
+                    this.selectGroup = obj;
+                    this.InputStatus.editGroup = false;
+                }
+                else {
+                    this.InputStatus.editGroup = true;
+                }
+            },  
+            openAddGroupDialog: function () {
+                this.Dialog.addGroupDialogTitle = "新增组";
+                this.AddGroupData.Id = null;
+                this.AddGroupData.GroupCode = "";
+                this.AddGroupData.GroupDesc = "";
+                this.InputStatus.groupCode = false;
+                this.Dialog.addGroupDialog = true;
+                setTimeout(this.$refs.AddGroupForm.clearValidate, 0);
+            },
+            openEditGroupDialog: function () {
+                var checkNode = this.$refs.GroupTree.getCurrentNode();
+                if (checkNode == null|| checkNode.ItemDesc != null) {
+                    $Msg.info("请选择组节点");
+                    return;
+                }
+                this.Dialog.addGroupDialogTitle = "编辑组";
+                this.InputStatus.groupCode = true;
+                this.AddGroupData.Id = checkNode.Id;
+                this.AddGroupData.GroupCode = checkNode.GroupCode;
+                this.AddGroupData.GroupDesc = checkNode.GroupDesc;
+                this.Dialog.addGroupDialog = true;
+                setTimeout(this.$refs.AddGroupForm.clearValidate, 0);
+            },
+            submitAddGroup: function () {
+                this.$refs.AddGroupForm.validate(function (success, validateobj) {
+                    if (success) {
+                        $vue.Loading.bodyLoading = true;
+                        axios.post("AddGorup", $vue.AddGroupData).then(function (response) {
+                            ActionCommonHandle(response.data, $vue, "保存成功", "保存失败", getTree);
+                        }).catch(function (error) {
+                            ErrorCommonHandle($vue);
+                        }).finally(function () {
+                            $vue.Loading.bodyLoading = false;
+                            $vue.Dialog.addGroupDialog = false;
+                        });
+                    }
+                });
+            },
+            openAddItemDialog: function () {
+                if (this.selectGroup == null) {
+                    $Msg.info("请选择字典组");
+                    return;
+                }
+                this.AddItemData.Id = null;
+                this.AddItemData.ItemDesc = "";
+                this.AddItemData.Sort = 0;
+                this.AddItemData.IsEnabled = true;
+                this.AddItemData.GroupCode = this.selectGroup.GroupCode;
+                this.AddItemData.GroupDesc = this.selectGroup.GroupDesc;
+                this.Dialog.addItemDialog = true;
+                setTimeout(this.$refs.AddItemForm.clearValidate, 0);
+            },
+            openEditItemDialog: function () {
+                if (this.$refs.dataTable.selection.length != 1) {
+                    $Msg.info("请选择你要编辑的一项！");
+                    return;
+                }
+                var editItem = this.$refs.dataTable.selection[0];
+                this.AddItemData.Id = editItem.Id;
+                this.AddItemData.ItemDesc = editItem.ItemDesc;
+                this.AddItemData.Sort = editItem.Sort;
+                this.AddItemData.IsEnabled = editItem.IsEnabled;
+                this.AddItemData.GroupCode = editItem.GroupCode;
+                this.AddItemData.GroupDesc = this.selectGroup.GroupDesc;
+                this.Dialog.addItemDialog = true;
+                setTimeout(this.$refs.AddItemForm.clearValidate, 0);
+            },
+            submitAddItemDialog: function () {
+                this.$refs.AddItemForm.validate(function (success, validateobj) {
+                    if (success) {
+                        $vue.Loading.bodyLoading = true;
+                        axios.post("AddItem", $vue.AddItemData).then(function (response) {
+                            ActionCommonHandle(response.data, $vue, "保存成功", "保存失败", function () {
+                                $vue.Loading.tableLoading = true;
+                                axios.post("GetGroupItemList", { groupCode: $vue.selectGroup.GroupCode }).then(function (res) {
+                                    $vue.tableData = res.data;
+                                }).finally(function () {
+                                    $vue.Loading.tableLoading = false;
+                                });
+                                getTree();
+                            });
+                        }).catch(function (error) {
+                            ErrorCommonHandle($vue);
+                        }).finally(function () {
+                            $vue.Loading.bodyLoading = false;
+                            $vue.Dialog.addItemDialog = false;
+                        });
+                    }
+                });
+            },
+            deleteItem: function () {
+                this.$confirm('是否确认删除这' + this.$refs.dataTable.selection.length + '行数据', '提示', {
+                    confirmButtonText: '确定',
+                    cancelButtonText: '取消',
+                    type: 'warning'
+                }).then(function () {
+                    $vue.Loading.bodyLoading = true;
+                    axios.post("DeleteItem", $vue.$refs.dataTable.selection).then(function (response) {
+                        $vue.Loading.bodyLoading = false;
+                        ActionCommonHandle(response.data, $vue, "删除成功", "删除失败", function () {
+                            $vue.Loading.tableLoading = true;
+                            axios.post("GetGroupItemList", { groupCode: $vue.selectGroup.GroupCode }).then(function (res) {
+                                $vue.tableData = res.data;
+                            }).finally(function () {
+                                $vue.Loading.tableLoading = false;
+                            });
+                            getTree();
+                        });
+                    }).catch(function (error) {
+                        ErrorCommonHandle($vue);
+                    }).finally(function () {
+                        $vue.Loading.bodyLoading = false;
+                    });
+                }).catch(function () {
+                    $vue.$message({
+                        type: 'info',
+                        message: '已取消删除'
+                    });
+                });
+            },
+            rowClick: function (row, event, column) {
+                this.$refs.dataTable.toggleRowSelection(row);
+            },
+           
+            selectChange: function (selectValue) {
+                if (this.$refs.dataTable.selection.length == 0) {
+                    this.InputStatus.editItem = true;
+                    this.InputStatus.deleteItem = true;
+                }
+                else if (this.$refs.dataTable.selection.length == 1) {
+                    this.InputStatus.editItem = false;
+                    this.InputStatus.deleteItem = false;
+                }
+                else {
+                    this.InputStatus.editItem = true;
+                    this.InputStatus.deleteItem = false;
+                }
+            },
+        }
+    });
+    function getTree() {
+        $vue.Loading.treeLoading = true;
+        axios.post("GetDicList").then(function (response) {
+            $vue.GroupData = response.data;
+        }).catch(function (error) {
+            $vue.GroupData = [];
+            $vue.$message({
+                type: 'error',
+                message: '服务器出错'
+            });
+        }).finally(function () {
+            $vue.Loading.treeLoading = false;
+        });
+    }
+    getTree();
+</script>
+<script>
+   
+</script>

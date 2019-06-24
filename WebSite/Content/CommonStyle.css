@@ -1,0 +1,72 @@
+﻿* {
+    margin: 0;
+    padding: 0;
+    list-style: none;
+    text-decoration: none;
+    font-family: 'Microsoft YaHei';
+}
+
+html {
+    height: 100%;
+    width: 100%;
+}
+
+body {
+    height: 100%;
+    width: 100%;
+}
+
+#App {
+    height:100%;
+}
+.Table_Button_Row {
+    margin-top:5px;
+    padding-left:20px;
+    padding-right:5px;
+    box-sizing:border-box;
+}
+.Query_Form {
+    padding: 20px;
+    padding-bottom: 0;
+    box-sizing: border-box;
+}
+.el-loading-mask {
+    z-index: 4999;
+}
+
+/*垂直滚动条的宽*/
+::-webkit-scrollbar {
+    width: 8px;
+    height: 10px;
+}
+
+/*修改滚动条的背景和圆角*/
+::-webkit-scrollbar-track-piece {
+    background: #ffffff;
+    -webkit-border-radius: 6px;
+}
+/*修改垂直滚动条的样式*/
+::-webkit-scrollbar-thumb:vertical {
+    border-radius: 10px;
+    -webkit-box-shadow: inset 0 0 5px rgba(0,0,0,0.2);
+    background: #535353;
+}
+
+/*修改水平滚动条的样式*/
+::-webkit-scrollbar-thumb:horizontal {
+    border-radius: 10px;
+    -webkit-box-shadow: inset 0 0 5px rgba(0,0,0,0.2);
+    background: #535353;
+}
+
+
+.el-table__body-wrapper::-webkit-scrollbar-thumb:vertical {
+    border-radius: 10px;
+    -webkit-box-shadow: inset 0 0 5px rgba(0,0,0,0.2);
+    background: #979797;
+}
+.el-table__body-wrapper::-webkit-scrollbar-thumb:horizontal {
+    border-radius: 10px;
+    -webkit-box-shadow: inset 0 0 5px rgba(0,0,0,0.2);
+    background: #aaaaaa;
+}

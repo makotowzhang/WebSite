@@ -1,0 +1,198 @@
+﻿<link href="~/Scripts/Quill/quill.snow.css" rel="stylesheet" />
+<script src="~/Scripts/Quill/katex.min.js"></script>
+<script src="~/Scripts/Quill/highlight.min.js"></script>
+<script src="~/Scripts/Quill/quill.min.js"></script>
+<link href="~/Scripts/Quill/extensions.css" rel="stylesheet" />
+<script type="text/x-template" id="QuillEditorComponent">
+    <div ref="editParent">
+        <template>
+            <div :id="toolbarId" ref="toolBar">
+                <span class="ql-formats" style="line-height:22px;">
+                    <select class="ql-font">
+                        <option value="SimSun"></option>
+                        <option value="SimHei"></option>
+                        <option value="Microsoft-YaHei"></option>
+                        <option value="KaiTi"></option>
+                        <option value="FangSong"></option>
+                        <option value="Arial"></option>
+                        <option value="Times-New-Roman"></option>
+                        <option value="sans-serif"></option>
+                    </select>
+                    <select class="ql-size">
+                        <option value="10px"></option>
+                        <option value="12px"></option>
+                        <option value="14px"></option>
+                        <option value="16px"></option>
+                        <option value="18px"></option>
+                        <option value="20px"></option>
+
+                    </select>
+                </span>
+                <span class="ql-formats">
+                    <button title="加粗" class="ql-bold"></button>
+                    <button title="斜体" class="ql-italic"></button>
+                    <button title="下划线" class="ql-underline"></button>
+                    <button title="删除线" class="ql-strike"></button>
+                </span>
+                <span class="ql-formats" style="line-height:22px;">
+                    <select  title="字体颜色" class="ql-color"></select>
+                    <select  title="背景颜色" class="ql-background"></select>
+                </span>
+                <span class="ql-formats" v-if="toolbar=='full'">
+                    <button class="ql-script" value="sub"></button>
+                    <button class="ql-script" value="super"></button>
+                </span>
+                <span class="ql-formats">
+                    <button class="ql-header" value="1"></button>
+                    <button class="ql-header" value="2"></button>
+                    <button class="ql-blockquote" v-if="toolbar=='full'"></button>
+                    <button class="ql-code-block" v-if="toolbar=='full'"></button>
+                </span>
+                <span class="ql-formats">
+                    <button  title="数字列表" class="ql-list" value="ordered"></button>
+                    <button  title="点列表" class="ql-list" value="bullet"></button>
+                    <button  title="缩进-1" class="ql-indent" value="-1"></button>
+                    <button  title="缩进+1" class="ql-indent" value="+1"></button>
+                </span>
+                <span class="ql-formats" style="line-height:22px;">
+                    <button title="文字方向" class="ql-direction" value="rtl"></button>
+                    <select title="对齐方式" class="ql-align"></select>
+                </span>
+                <span class="ql-formats">
+                    <button title="超链接" class="ql-link"></button>
+                    <button title="图片" class="ql-image"></button>
+                    <button class="ql-video" v-if="toolbar=='full'"></button>
+                    <button class="ql-formula" v-if="toolbar=='full'"></button>
+                </span>
+                <span class="ql-formats">
+                    <button title="清除格式" class="ql-clean"></button>
+                </span>
+
+
+            </div>
+            <div :id="containerId" ref="editContainer" style="height:auto"></div>
+        </template>
+    </div>
+    
+</script>
+<script>
+  
+    Vue.component('quill-editor', {
+        props: {
+            placeholder: {
+                type: String,
+                default: '请输入内容'
+            },
+            toolbar: {
+                type: String,
+                default: "common"
+            },
+            content: {
+                type: String,
+                default: ""
+            },
+            width: {
+                type: String,
+                Default: "100%"
+            },
+            height: {
+                type: String,
+                Default: "100%"
+            },
+            onlyshow: {
+                type: Boolean,
+                Default: false
+            }
+        },
+        data: function () {
+            return {
+                toolbarId: "t" + Math.random().toString().replace("0.", ""),
+                containerId: "c" + Math.random().toString().replace("0.", ""),
+                editor: null,
+                editorContent: ""
+            };
+        },
+        mounted: function () {
+            //注册大小
+            var Size = Quill.import('attributors/style/size');
+            Size.whitelist = ['10px', '12px', '14px', '16px', '18px', '20px'];
+            Quill.register(Size, true);
+            //注册字体
+            var fonts = ['SimSun', 'SimHei', 'Microsoft-YaHei', 'KaiTi', 'FangSong', 'Arial', 'Times-New-Roman', 'sans-serif'];
+            var Font = Quill.import('formats/font');
+            Font.whitelist = fonts;
+            Quill.register(Font, true);
+
+
+            var editor = this.editor = new Quill("#" + this.containerId, {
+                modules: {
+                    formula: true,
+                    syntax: true,
+                    toolbar: {
+                        container: '#' + this.toolbarId,
+                        handlers: {
+                            'image': function (value) {
+                                var position = editor.getSelection();
+                                var fileInput = document.createElement('input');
+                                fileInput.id = "fileInput";
+                                fileInput.setAttribute('type', 'file');
+                                fileInput.setAttribute('accept', 'image/png, image/gif, image/jpeg, image/bmp, image/x-icon');
+                                fileInput.addEventListener('change', function () {
+                                    if (fileInput.files != null && fileInput.files[0] != null) {
+                                        var param = new FormData();
+                                        param.append('file', fileInput.files[0]);
+                                        param.append("path", "temp/photo");
+                                        var config = {
+                                            headers: {
+                                                'Content-Type': 'multipart/form-data'
+                                            }
+                                        };
+                                        axios.post('CommonUploadFile', param, config)
+                                            .then(function (response) {
+                                                editor.insertEmbed(position.index, 'image', response.data.msg);
+                                                editor.setSelection(position.index + 1, 0);
+                                                fileInput.remove();
+                                            })
+                                    }
+                                });
+                                fileInput.click();
+                            }
+                        },
+                        options: { size: [false, '10px', '14px', '20px'] }
+                    }
+                },
+                placeholder: this.placeholder,
+                theme: 'snow'
+            });
+            var h1 = this.$refs.editParent.offsetHeight;
+            var h2 = this.$refs.toolBar.offsetHeight;
+            this.$refs.editContainer.style.height = (h1 - h2) + "px";
+            var temp = this;
+            this.editor.on('editor-change', function () {
+                temp.editorContent = temp.editor.getContents();
+                temp.$emit('update:content', encodeURI(document.querySelector("#" + temp.containerId+" .ql-editor").innerHTML));
+            });
+            setTimeout(function () {
+                document.querySelector("#" + temp.containerId + " .ql-editor").innerHTML = decodeURI(temp.content);
+            }, 0);
+        },
+        methods: {
+            getText: function () {
+                return this.$refs.editContainer.innerHTML;
+                //return document.getElementsByClassName("ql-editor").item(0).innerHTML;
+            },
+            editorBlur: function () {
+                document.querySelector("#" + this.containerId + " .ql-editor").blur();
+            }
+        },
+        watch: {
+            content: function (curVal, oldVal) {
+                if (this.editor.hasFocus()) {
+                    return;
+                }
+                document.querySelector("#" + this.containerId + " .ql-editor").innerHTML = decodeURI(this.content);
+            }
+        },
+        template: '#QuillEditorComponent'
+    })
+</script>
